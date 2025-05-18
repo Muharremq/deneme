@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Users, ShoppingBag, BarChart2, Settings, Shield, AlertTriangle, Trash2, CheckCircle, XCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Product, SupportTicket, TicketStatus, User, UserRole } from '../../types';
-import { productApi, supportApi } from '../../services/api';
+import { productApi, supportApi, authApi } from '../../services/api';
 import Button from '../../components/ui/Button';
 
 interface DashboardStats {
@@ -23,37 +23,35 @@ const mockStats: DashboardStats = {
   pendingApprovals: 23
 };
 
-const mockUsers: User[] = [
-  {
-    id: '1',
-    name: 'John Doe',
-    email: 'john@example.com',
-    role: UserRole.BUYER,
-    phone: '+1234567890'
-  },
-  {
-    id: '2',
-    name: 'Jane Smith',
-    email: 'jane@example.com',
-    role: UserRole.SELLER,
-    phone: '+0987654321'
-  }
-];
-
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (activeSection === 'product-moderation') {
+    if (activeSection === 'user-management') {
+      loadUsers();
+    } else if (activeSection === 'product-moderation') {
       loadProducts();
     } else if (activeSection === 'reports') {
       loadTickets();
     }
   }, [activeSection]);
+
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      const data = await authApi.getAllUsers();
+      setUsers(data);
+    } catch (error) {
+      console.error('Failed to load users:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadProducts = async () => {
     try {
@@ -92,6 +90,17 @@ const AdminDashboard: React.FC = () => {
       console.error('Failed to update ticket status:', error);
     }
   };
+  
+  const handleDeleteUser = async (userId: string) => {
+    if (!window.confirm('Are you sure you want to delete this user?')) return;
+    
+    try {
+      await authApi.deleteUser(userId);
+      loadUsers();
+    } catch (error) {
+      console.error('Failed to delete user:', error);
+    }
+  };
 
   const formatCurrency = (amount: number) => {
     return amount.toLocaleString('en-US', {
@@ -117,59 +126,87 @@ const AdminDashboard: React.FC = () => {
         return (
           <div className="bg-white rounded-lg shadow-md p-6">
             <h2 className="text-lg font-medium text-gray-900 mb-6">User Management</h2>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead>
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Email
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Role
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Phone
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {mockUsers.map((user) => (
-                    <tr key={user.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">{user.email}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          user.role === UserRole.SELLER ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
-                        }`}>
-                          {user.role}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {user.phone}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <Button variant="outline" size="sm" className="mr-2">
-                          Edit
-                        </Button>
-                        <Button variant="danger" size="sm">
-                          Delete
-                        </Button>
-                      </td>
+            
+            {loading ? (
+              <div className="animate-pulse">
+                <div className="h-10 bg-gray-200 rounded mb-4"></div>
+                <div className="h-10 bg-gray-200 rounded mb-4"></div>
+                <div className="h-10 bg-gray-200 rounded"></div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead>
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Email
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Role
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Phone
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {users.map((user) => (
+                      <tr key={user.id}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            {user.avatar ? (
+                              <img
+                                src={user.avatar}
+                                alt={user.name}
+                                className="h-10 w-10 rounded-full mr-3"
+                              />
+                            ) : (
+                              <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center mr-3">
+                                <Users size={20} className="text-gray-500" />
+                              </div>
+                            )}
+                            <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-500">{user.email}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            user.role === UserRole.ADMIN 
+                              ? 'bg-red-100 text-red-800' 
+                              : user.role === UserRole.SELLER 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {user.role}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {user.phone || 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <Button 
+                            variant="danger" 
+                            size="sm"
+                            onClick={() => handleDeleteUser(user.id)}
+                          >
+                            <Trash2 size={16} className="mr-1" />
+                            Delete
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         );
 
