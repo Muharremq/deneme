@@ -36,6 +36,12 @@ const Navbar: React.FC = () => {
               <Link to="/products" className="border-transparent text-gray-500 hover:border-blue-500 hover:text-blue-600 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
                 Products
               </Link>
+               {/* Customer Support butonu sadece buyer ve seller için gösteriliyor */}
+  {isAuthenticated && user?.role !== 'admin' && (
+    <Link to="/support" className="border-transparent text-gray-500 hover:border-blue-500 hover:text-blue-600 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+      Customer Support
+    </Link>
+  )}
               {isAuthenticated && user?.role === 'seller' && (
                 <Link to="/seller/dashboard" className="border-transparent text-gray-500 hover:border-blue-500 hover:text-blue-600 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
                   Seller Dashboard
@@ -88,7 +94,7 @@ const Navbar: React.FC = () => {
                 </div>
                 
                 {isProfileMenuOpen && (
-                  <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
+  <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
                     <div className="py-1">
                       <div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-200">
                         Signed in as <span className="font-medium">{user?.name}</span>
@@ -185,6 +191,16 @@ const Navbar: React.FC = () => {
             >
               Products
             </Link>
+            {/* Customer Support butonu sadece buyer ve seller için gösteriliyor */}
+      {isAuthenticated && user?.role !== 'admin' && (
+        <Link
+          to="/support"
+          onClick={toggleMenu}
+          className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-blue-500 hover:text-blue-600"
+        >
+          Customer Support
+        </Link>
+      )}
             {isAuthenticated && user?.role === 'seller' && (
               <Link
                 to="/seller/dashboard"

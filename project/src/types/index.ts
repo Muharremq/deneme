@@ -116,6 +116,7 @@ export interface SupportTicket {
   userName: string;
   subject: string;
   message: string;
+  relatedProductId?: string; // bu satırı ekleyin, zaten varsa değiştirmeyin
   status: TicketStatus;
   createdAt: string;
   updatedAt: string;

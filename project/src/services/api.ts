@@ -725,17 +725,27 @@ export const productApi = {
   },
 
   deleteProduct: async (id: string) => {
-    await new Promise((resolve) => setTimeout(resolve, 600));
+  await new Promise((resolve) => setTimeout(resolve, 600));
 
-    const initialLength = dynamicProducts.length;
-    dynamicProducts = dynamicProducts.filter((p) => p.id !== id);
+  // Ürünleri localStorage'dan al
+  const products = getProducts();
+  const initialLength = products.length;
+  
+  // Silme işlemini yap
+  const updatedProducts = products.filter((p) => p.id !== id);
 
-    if (dynamicProducts.length === initialLength) {
-      throw new Error("Product not found");
-    }
+  if (updatedProducts.length === initialLength) {
+    throw new Error("Product not found");
+  }
 
-    return { success: true };
-  },
+  // Güncellenmiş ürün listesini localStorage'a kaydet
+  saveProducts(updatedProducts);
+  
+  // Ayrıca bellek değişkenini de güncelle
+  dynamicProducts = [...updatedProducts];
+
+  return { success: true };
+},
 };
 
 // Cart API
@@ -745,18 +755,6 @@ export const cartApi = {
 
     const cartItems: CartItem[] = [];
     let subtotal = 0;
-
-    // Demo amaçlı basit bir sepet oluştur
-    const product = dynamicProducts[0];
-    if (product) {
-      const cartItem: CartItem = {
-        productId: product.id,
-        product,
-        quantity: 1,
-      };
-      cartItems.push(cartItem);
-      subtotal += product.price;
-    }
 
     const tax = subtotal * 0.08; // %8 vergi
     const total = subtotal + tax;
@@ -847,19 +845,6 @@ export const wishlistApi = {
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     const wishlistItems: WishlistItem[] = [];
-
-    // Demo amaçlı örnek bir istek listesi öğesi ekle
-    const product = dynamicProducts[1];
-    if (product) {
-      const wishlistItem: WishlistItem = {
-        id: "1",
-        userId: "1",
-        productId: product.id,
-        product,
-        addedAt: new Date().toISOString(),
-      };
-      wishlistItems.push(wishlistItem);
-    }
 
     return {
       items: wishlistItems,
@@ -1041,73 +1026,109 @@ export const orderApi = {
   },
 };
 
-// Support Ticket API
+// Support Ticket API değişiklikleri
 export const supportApi = {
   createTicket: async (
-    userId: string,
-    userName: string,
-    subject: string,
-    message: string
-  ) => {
-    await new Promise((resolve) => setTimeout(resolve, 800));
+  userId: string,
+  userName: string,
+  subject: string,
+  message: string,
+  relatedProductId?: string // relatedProductId parametresini eklediğimizden emin olalım
+) => {
+  await new Promise((resolve) => setTimeout(resolve, 800));
 
-    const newTicket: SupportTicket = {
-      id: Math.random().toString(),
-      userId,
-      userName,
-      subject,
-      message,
-      status: TicketStatus.OPEN,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+  // tickets localStorage'dan alınıyor
+  const ticketsJson = localStorage.getItem('support_tickets');
+  const tickets = ticketsJson ? JSON.parse(ticketsJson) : [];
 
-    return newTicket;
-  },
+  // Yeni ticket oluşturuluyor
+  const newTicket: SupportTicket = {
+    id: Math.random().toString(),
+    userId,
+    userName,
+    subject,
+    message,
+    relatedProductId, // relatedProductId'yi burada atadığımızdan emin olalım
+    status: TicketStatus.OPEN,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  // Ticket listeye ekleniyor ve localStorage'a kaydediliyor
+  tickets.push(newTicket);
+  localStorage.setItem('support_tickets', JSON.stringify(tickets));
+
+  return newTicket;
+},
+  // supportApi içine ekleyin (diğer fonksiyonları değiştirmeyin)
+getUserTickets: async (userId: string) => {
+  await new Promise((resolve) => setTimeout(resolve, 500));
+
+  // localStorage'dan tickets verilerini al
+  const ticketsJson = localStorage.getItem('support_tickets');
+  const tickets = ticketsJson ? JSON.parse(ticketsJson) : [];
+  
+  // Sadece bu kullanıcının ticket'larını filtrele
+  return tickets.filter(ticket => ticket.userId === userId);
+},
 
   getTickets: async (userId?: string) => {
     await new Promise((resolve) => setTimeout(resolve, 500));
 
-    // Örnek destek talepleri oluştur
-    const tickets: SupportTicket[] = [
-      {
-        id: "1",
-        userId: "1",
-        userName: "John Doe",
-        subject: "Order Delivery Issue",
-        message:
-          "My order #1 was supposed to arrive yesterday but I still haven't received it.",
-        status: TicketStatus.OPEN,
-        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 gün önce
-        updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: "2",
-        userId: "2",
-        userName: "Jane Smith",
-        subject: "Refund Request",
-        message:
-          "I would like to request a refund for my recent purchase as the item was damaged.",
-        status: TicketStatus.IN_PROGRESS,
-        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 gün önce
-        updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 gün önce
-      },
-    ];
+    // localStorage'dan biletleri al
+    const ticketsJson = localStorage.getItem('support_tickets');
+    const tickets = ticketsJson ? JSON.parse(ticketsJson) : [];
 
+    // Eğer userId belirtilmişse, sadece o kullanıcıya ait biletleri döndür
     if (userId) {
       return tickets.filter((ticket) => ticket.userId === userId);
     }
+    
+    // Tüm biletleri döndür
     return tickets;
+  },
+
+  getTicketById: async (ticketId: string) => {
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    // localStorage'dan biletleri al
+    const ticketsJson = localStorage.getItem('support_tickets');
+    const tickets = ticketsJson ? JSON.parse(ticketsJson) : [];
+    
+    // İlgili bileti bul
+    const ticket = tickets.find((t) => t.id === ticketId);
+    
+    if (!ticket) {
+      throw new Error("Ticket not found");
+    }
+    
+    return ticket;
   },
 
   updateTicketStatus: async (ticketId: string, status: TicketStatus) => {
     await new Promise((resolve) => setTimeout(resolve, 600));
 
-    return {
-      id: ticketId,
+    // localStorage'dan biletleri al
+    const ticketsJson = localStorage.getItem('support_tickets');
+    const tickets = ticketsJson ? JSON.parse(ticketsJson) : [];
+    
+    // İlgili bileti bul ve güncelle
+    const index = tickets.findIndex((t) => t.id === ticketId);
+    
+    if (index === -1) {
+      throw new Error("Ticket not found");
+    }
+    
+    tickets[index] = {
+      ...tickets[index],
       status,
-      updatedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
+    
+    // Güncellenmiş bilet listesini localStorage'a kaydet
+    localStorage.setItem('support_tickets', JSON.stringify(tickets));
+    
+    return tickets[index];
   },
 };
 

@@ -18,6 +18,8 @@ import OrdersPage from './pages/OrdersPage';
 import WishlistPage from './pages/WishlistPage';
 import SellerDashboard from './pages/seller/SellerDashboard';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import SupportPage from './pages/SupportPage';
+import MySupportTicketsPage from './pages/MySupportTicketsPage';
 
 // Protected route component
 const ProtectedRoute = ({ 
@@ -90,6 +92,17 @@ const App: React.FC = () => {
                       <AdminDashboard />
                     </ProtectedRoute>
                   } />
+                  <Route path="/support" element={
+  <ProtectedRoute>
+    <SupportPage />
+  </ProtectedRoute>
+} />
+                  // Routes içine aşağıdaki rotayı ekleyin
+<Route path="/my-tickets" element={
+  <ProtectedRoute requiredRole="buyer,seller">
+    <MySupportTicketsPage />
+  </ProtectedRoute>
+} />
                 </Routes>
               </main>
               <Footer />

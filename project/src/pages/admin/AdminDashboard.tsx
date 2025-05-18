@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Users, ShoppingBag, BarChart2, Settings, Shield, AlertTriangle, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import { Users, ShoppingBag, BarChart2, Settings, Shield, AlertTriangle, AlertCircle, Trash2, CheckCircle, XCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Product, SupportTicket, TicketStatus, User, UserRole } from '../../types';
 import { productApi, supportApi, authApi } from '../../services/api';
 import Button from '../../components/ui/Button';
+
 
 interface DashboardStats {
   totalUsers: number;
@@ -30,6 +31,7 @@ const AdminDashboard: React.FC = () => {
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
 
   useEffect(() => {
     if (activeSection === 'user-management') {
@@ -70,6 +72,18 @@ const AdminDashboard: React.FC = () => {
       console.error('Failed to load tickets:', error);
     }
   };
+
+    // Bilet detaylarını görüntüleme fonksiyonu
+const handleViewTicketDetails = (ticketId: string) => {
+  setSelectedTicketId(prevId => prevId === ticketId ? null : ticketId);
+};
+
+// Ürün adını ürün ID'si ile bulmak için yardımcı fonksiyon
+const getProductName = (productId: string) => {
+  const product = products.find(p => p.id === productId);
+  return product ? product.name : 'Unknown Product';
+};
+
 
   const handleDeleteProduct = async (productId: string) => {
     if (!window.confirm('Are you sure you want to delete this product?')) return;
@@ -281,14 +295,32 @@ const AdminDashboard: React.FC = () => {
           </div>
         );
 
-      case 'reports':
-        return (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-6">Reports & Issues</h2>
-            <div className="space-y-6">
-              {tickets.map((ticket) => (
-                <div key={ticket.id} className="border rounded-lg p-4">
-                  <div className="flex justify-between items-start mb-4">
+     case 'reports':
+  return (
+    <div className="bg-white rounded-lg shadow-md p-6">
+      <h2 className="text-lg font-medium text-gray-900 mb-6">Reports & Issues</h2>
+      {loading ? (
+        <div className="animate-pulse">
+          <div className="h-10 bg-gray-200 rounded mb-4"></div>
+          <div className="h-10 bg-gray-200 rounded mb-4"></div>
+          <div className="h-10 bg-gray-200 rounded"></div>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {!tickets || tickets.length === 0 ? (
+            <div className="text-center py-8">
+              <AlertCircle className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-lg font-medium text-gray-900">No tickets found</h3>
+              <p className="mt-1 text-sm text-gray-500">There are no support tickets at this time.</p>
+            </div>
+          ) : (
+            tickets.map((ticket) => (
+              <div key={ticket.id} className="border rounded-lg overflow-hidden">
+                <div 
+                  className="p-4 cursor-pointer hover:bg-gray-50"
+                  onClick={() => handleViewTicketDetails(ticket.id)}
+                >
+                  <div className="flex justify-between items-start mb-2">
                     <div>
                       <h3 className="text-lg font-medium text-gray-900">{ticket.subject}</h3>
                       <p className="text-sm text-gray-500">
@@ -297,6 +329,11 @@ const AdminDashboard: React.FC = () => {
                       <p className="text-sm text-gray-500">
                         Created: {new Date(ticket.createdAt).toLocaleDateString()}
                       </p>
+                      {ticket.relatedProductId && (
+                        <p className="text-sm text-gray-500">
+                          Related Product: {getProductName(ticket.relatedProductId)}
+                        </p>
+                      )}
                     </div>
                     <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                       ticket.status === TicketStatus.OPEN
@@ -308,32 +345,46 @@ const AdminDashboard: React.FC = () => {
                       {ticket.status}
                     </span>
                   </div>
-                  <p className="text-gray-700 mb-4">{ticket.message}</p>
-                  <div className="flex justify-end space-x-2">
-                    {ticket.status === TicketStatus.OPEN && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleUpdateTicketStatus(ticket.id, TicketStatus.IN_PROGRESS)}
-                      >
-                        Start Processing
-                      </Button>
-                    )}
-                    {ticket.status === TicketStatus.IN_PROGRESS && (
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => handleUpdateTicketStatus(ticket.id, TicketStatus.RESOLVED)}
-                      >
-                        Mark as Resolved
-                      </Button>
-                    )}
-                  </div>
+                  
+                  {selectedTicketId === ticket.id && (
+                    <div className="mt-4 border-t pt-4">
+                      <p className="text-gray-700 mb-4">{ticket.message}</p>
+                      <div className="flex justify-end space-x-2">
+                        {ticket.status === TicketStatus.OPEN && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUpdateTicketStatus(ticket.id, TicketStatus.IN_PROGRESS);
+                            }}
+                          >
+                            Start Processing
+                          </Button>
+                        )}
+                        {ticket.status === TicketStatus.IN_PROGRESS && (
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUpdateTicketStatus(ticket.id, TicketStatus.RESOLVED);
+                            }}
+                          >
+                            Mark as Resolved
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
-          </div>
-        );
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
 
       default:
         return null;
