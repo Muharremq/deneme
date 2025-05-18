@@ -140,7 +140,6 @@ const RegisterPage: React.FC = () => {
               >
                 <option value="buyer">Buyer</option>
                 <option value="seller">Seller</option>
-                {/* Admin seçeneğini kaldırdık */}
               </select>
             </div>
             
