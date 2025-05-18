@@ -1,4 +1,4 @@
-npmimport React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Users, ShoppingBag, BarChart2, Settings, Shield, AlertTriangle, Trash2, CheckCircle, XCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Product, SupportTicket, TicketStatus, User, UserRole } from '../../types';
